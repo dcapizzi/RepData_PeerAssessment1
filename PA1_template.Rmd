@@ -1,6 +1,6 @@
 # Reproducible Research: Peer Assessment 1
 
-Making some changes to test the commit
+Insert introductory text here
 
 ## Loading and preprocessing the data
 '''r{}
