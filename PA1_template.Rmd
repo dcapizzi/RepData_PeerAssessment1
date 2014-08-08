@@ -3,9 +3,10 @@
 Making some changes to test the commit
 
 ## Loading and preprocessing the data
-
-
-
+'''r{}
+unzip("activity.zip")
+data <- read.csv("activity.csv"", stringsAsFactors=FALSE)
+'''
 ## What is mean total number of steps taken per day?
 
 
