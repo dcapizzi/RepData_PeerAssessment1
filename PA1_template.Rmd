@@ -2,14 +2,49 @@
 
 Insert introductory text here
 
-## Loading and preprocessing the data
-'''r{}
-unzip("activity.zip")
-data <- read.csv("activity.csv"", stringsAsFactors=FALSE)
-'''
+## Load the R packages to be used during the session
+
+```{r}
+library(ggplot2)
+library("plyr") 
+```
+
+## Load and preprocess the data
+
+```{r}
+unzip("activity.zip")  
+data <- read.csv("activity.csv", stringsAsFactors=FALSE)
+data$date <- strptime(data$date,"%Y-%m-%d")
+```
+
 ## What is mean total number of steps taken per day?
 
+Develop histogram graph of steps taken per day
 
+```{r}
+sums <- ddply(data, 
+      .(date), 
+      summarise, 
+      sum_steps = sum(steps, na.rm = TRUE),
+      sum_int = sum(interval, na.rm=TRUE))
+
+m <- ggplot(sums, aes(x=sum_steps)) + 
+      geom_histogram(binwidth = 1000,
+                     aes(fill = ..count..)) +
+      labs(x = "Total Steps Taken Per Day", 
+            y = "Count of Steps", 
+            title = "Total Steps Taken Per Day")
+
+print(m)
+
+```
+
+Calculate mean and median steps takend per day
+
+```{r}
+mean(sums$sum_steps)
+median(sums$sum_steps)
+```
 
 ## What is the average daily activity pattern?
 
