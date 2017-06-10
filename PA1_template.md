@@ -22,7 +22,7 @@ library(ggplot2)
 library(plyr) 
 ```
 
-#### Load the data
+#### Step 1: Load the data
 
 Our first step is to unzip and load the data into R. We transform the data variable into a POSIXlt date to facilitate the analysis.
 
@@ -30,20 +30,17 @@ Our first step is to unzip and load the data into R. We transform the data varia
 ```r
 unzip("activity.zip")  # unzip the data file
 data <- read.csv("activity.csv", stringsAsFactors=FALSE) # read the data into R
-data$date <- strptime(data$date,"%Y-%m-%d") # convert date to POSIXlt
 str(data) # print summary of the data
 ```
 
 ```
 ## 'data.frame':	17568 obs. of  3 variables:
 ##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
-##  $ date    : POSIXlt, format: "2012-10-01" "2012-10-01" ...
+##  $ date    : chr  "2012-10-01" "2012-10-01" "2012-10-01" "2012-10-01" ...
 ##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
 ```
 
-#### Question 1: What is mean total number of steps taken per day?
-
-*1.1 Histogram*
+#### Step 2: Histogram of the total number of steps taken each day
 
 First, we develop a histogram of total steps taken per day. To do this, we first use the ddply function to calculate the total steps taken by day (excluding NAs). We then plot the histogram using this data.
 
@@ -64,32 +61,30 @@ hist <- ggplot(sums, aes(x=sum_steps)) +  # plot sum_steps
 print(hist)
 ```
 
-![plot of chunk hist_stepstaken](figure/hist_stepstaken.png) 
+![plot of chunk hist_stepstaken](figure/hist_stepstaken-1.png)
 
 Interestingly, over 10 days have values from zero to 1,000 (the first bin.) We investigate these further, to find 8 days with zero steps per day.
 
 
 ```r
-sums[sums$sum_steps<1000,]
+sums[sums$sum_steps==0,]
 ```
 
 ```
 ##          date sum_steps
 ## 1  2012-10-01         0
-## 2  2012-10-02       126
 ## 8  2012-10-08         0
 ## 32 2012-11-01         0
 ## 35 2012-11-04         0
 ## 40 2012-11-09         0
 ## 41 2012-11-10         0
 ## 45 2012-11-14         0
-## 46 2012-11-15        41
 ## 61 2012-11-30         0
 ```
 
-*1.2 Unadjusted Mean and Median*
+#### Step 3: Mean and median number of steps taken each day
 
-We then calculate the unadjusted mean and median steps taken per day, store, and print the results. We use the sum_steps variable calculated previously.
+We then calculate the mean and median steps taken per day, store, and print the results. We use the sum_steps variable calculated previously.
 
 
 ```r
@@ -100,7 +95,7 @@ step_mean
 ```
 
 ```
-## [1] 9354
+## [1] 9354.23
 ```
 
 ```r
@@ -111,11 +106,11 @@ step_median
 ## [1] 10395
 ```
 
-#### Question 2: What is the average daily activity pattern?
+#### Step 4: Time series plot of the average number of steps taken
 
 We now seek to identify the daily pattern (the average number of steps for each 5-minute period during the day.) 
 
-*2.1 Time Series Plot*
+*4.1 Time Series Plot*
 
 We again use ddply to summarize the data set, this time to calculate the average number of steps for each interval independent of the day. We plot the data in a line graph to better understand the distribution.
 
@@ -135,9 +130,9 @@ line <- ggplot(avgs, aes(x = interval, y = avg_steps)) +
 print(line)
 ```
 
-![plot of chunk time_series](figure/time_series.png) 
+![plot of chunk time_series](figure/time_series-1.png)
 
-*2.2 Peak Interval Time*  
+#### Step 5: The 5-minute interval that, on average, contains the maximum number of steps
 Based on the histogram, it appears that peak movement occurs between the 500th and 1000th interval. We now calculate the interval with the largest average steps, which is the 835th interval, in which approximately 206 steps are taken on average across our days.
 
 
@@ -149,7 +144,7 @@ print(max_steps)
 ```
 
 ```
-## [1] 206.2
+## [1] 206.1698
 ```
 
 ```r
@@ -164,15 +159,15 @@ This implies that the most active time (on average) across the 61-day sample set
 
 
 ```r
-max_interval/60  # max steps divided by 60 minutes in an hour is 13.916
+max_interval/60  # max steps divided by 60 minutes in an hour
 ```
 
 ```
-## [1] 13.92
+## [1] 13.91667
 ```
 
 ```r
-max_interval - (13*60) # remaining minutes is 55
+max_interval - (13*60) # remaining minutes 
 ```
 
 ```
@@ -180,7 +175,7 @@ max_interval - (13*60) # remaining minutes is 55
 ```
 
 
-#### Question 3: How to address the missing values?
+#### Step 6: Code to describe and show a strategy for imputing missing data
 
 *3.1 Missing Values*  
 There are approximately 2,304 NA values in the data set.
@@ -206,20 +201,23 @@ countNAs <- ddply(data,  # count NAs in data
       avg_steps = mean(steps, na.rm = TRUE), # count average steps
       NAcount = sum(is.na(steps))) # count NAs for that date
 
+
+
 NAplot <-ggplot(countNAs, # plot NA count
-            aes(x = date,  # x is date
+            aes(x = strptime(date,"%Y-%m-%d"),  # x is date (stripped of time)
             y = NAcount)) + # y is NA count
             geom_line(colour="darkgreen") # color dark green
 
 print(NAplot)
 ```
 
-![plot of chunk NA_strategy](figure/NA_strategy.png) 
+![plot of chunk NA_strategy](figure/NA_strategy-1.png)
 
 It is clear that the graph "spikes" on 8 particular days and there are no NAs at any other time. The days with NAs are summarized below:
 
 ```r
-countNAs[countNAs$NAcount>0,]
+NAdays <- countNAs[rowSums(is.na(countNAs)) > 0,]
+NAdays
 ```
 
 ```
@@ -234,15 +232,15 @@ countNAs[countNAs$NAcount>0,]
 ## 61 2012-11-30       NaN     288
 ```
       
-Given that the NAs are highly concentrated by day, it seems logical to impute them by interval (as the average for that inveval on other days seems an adequate indicator of what occurs other days where we have data.)
+Given that the NAs are highly concentrated by day, it seems logical to apply the average steps at that time interval on other days.
 
 *3.3 Create a New Data Set* 
 
-To create a new data set, I merge the existing averages by interval into my original data set to create a new data set. I create a new variable, newsteps, which is either (1) original value if availaable or (2) the interval average if it is NA. 
+To create a new data set, I merge the existing averages by interval into my original data set to create a new data set. I create a new variable, newsteps, which is either (1) original value if available or (2) the interval average if it is NA. 
 
 
 ```r
-new_data <- merge(data, avgs) # merge existing averages into a new data set
+new_data <- merge(data, avgs, by="interval") # merge existing averages into a new data set by interval
 new_data <- new_data[order(new_data$date,  # reorder by date
                          new_data$interval), # and interval
                    c(3,1,2,4)] # rearrange columns to date, interval, steps, newsteps
@@ -250,9 +248,35 @@ new_data <- new_data[order(new_data$date,  # reorder by date
 new_data$new_steps <- ifelse(is.na(new_data$steps), # if steps is NA
                    new_data$avg_steps, # replace with avg steps per interval
                    new_data$steps) # else it remains steps
+
+new_data[sample(nrow(new_data), 20), ] # display random data to applied criteria
 ```
 
-*3.4 Replot the New Data* 
+```
+##             date interval steps  avg_steps new_steps
+## 14300 2012-10-10     1930     0  27.396226   0.00000
+## 11409 2012-10-27     1535     0  65.320755   0.00000
+## 4468  2012-10-08      605    NA  49.264151  49.26415
+## 3087  2012-10-13      410     0   2.566038   0.00000
+## 14733 2012-11-04     2005    NA  19.018868  19.01887
+## 17012 2012-10-10     2310     0   0.000000   0.00000
+## 10510 2012-11-01     1420    NA  35.471698  35.47170
+## 10474 2012-10-31     1415     0  48.698113   0.00000
+## 12614 2012-10-29     1710     0  50.716981   0.00000
+## 5649  2012-11-29      740    24  52.264151  24.00000
+## 1094  2012-10-30      125     0   1.113208   0.00000
+## 7576  2012-11-02     1020     0  38.924528   0.00000
+## 9757  2012-10-17     1315     8  40.981132   8.00000
+## 5025  2012-10-03      650   533  37.358491 533.00000
+## 554   2012-11-25       45     0   1.471698   0.00000
+## 7021  2012-11-22      935     0  45.226415   0.00000
+## 6129  2012-10-24      820     0 171.150943   0.00000
+## 4565  2012-10-01      610    NA  53.773585  53.77358
+## 6955  2012-10-13      930   488  66.207547 488.00000
+## 31    2012-11-03        0     0   1.716981   0.00000
+```
+
+#### Step 7: Histogram of the total number of steps taken each day after missing values are imputed
 
 I now plot the new data set with the same parameters as the original. It is clear that the NAs have been addressed and the distribution is more appropriate, with most days (18) falling between 10,000 and 11,000 days. (Note 8 of these are formerly NAs) 
 
@@ -273,20 +297,9 @@ new_hist <- ggplot(new_sums, aes(x=new_sum_steps)) +  # graph new data
 print(new_hist)
 ```
 
-![plot of chunk new_hist](figure/new_hist.png) 
+![plot of chunk new_hist](figure/new_hist-1.png)
 
-The mean and median are now the same (as the eight imputed values fall at the median / average). The median change is calculated and printed below.
-
-
-```r
-new_step_mean <- mean(new_sums$new_sum_steps)
-new_step_median <- median(new_sums$new_sum_steps)
-
-mean_change <- new_step_mean - step_mean
-median_change <- step_median - new_step_median
-```
-
-#### Question 4: Are there differences in activity patterns between weekdays and weekends?
+#### Step 8: Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
 
 We now want to identify weekdays vs. weekends and identify and differences. 
 
@@ -296,7 +309,7 @@ So, I use the date varaible to first determine the weekday (with the weekdays fu
 
 
 ```r
-new_data$weekday <- weekdays(new_data$date) # add weekday (day of week) to data
+new_data$weekday <- weekdays(strptime(new_data$date,"%Y-%m-%d")) # add weekday (day of week) to data
 
 factor <- ifelse(new_data$weekday==c("Saturday", # if weekday is Sat / Sun...
                                      "Sunday"),
@@ -305,17 +318,32 @@ factor <- ifelse(new_data$weekday==c("Saturday", # if weekday is Sat / Sun...
 
 factor <- as.factor(factor) # convert factor to a factor-type variable
 new_data <- cbind(new_data,factor) # bind factor to my data frame
-head(new_sums) # print out values to verify mapping
+
+new_data[sample(nrow(new_data), 20), ] # print out samples
 ```
 
 ```
-##         date new_sum_steps
-## 1 2012-10-01         10766
-## 2 2012-10-02           126
-## 3 2012-10-03         11352
-## 4 2012-10-04         12116
-## 5 2012-10-05         13294
-## 6 2012-10-06         15420
+##             date interval steps   avg_steps  new_steps   weekday  factor
+## 965   2012-11-07      115     0   0.3396226  0.0000000 Wednesday weekday
+## 16096 2012-11-16     2155     0   2.6226415  0.0000000    Friday weekday
+## 389   2012-10-31       30     0   0.5283019  0.0000000 Wednesday weekday
+## 9368  2012-11-29     1245     0  37.7358491  0.0000000  Thursday weekday
+## 2945  2012-10-19      400     0   1.1886792  0.0000000    Friday weekday
+## 5984  2012-11-03      810    31 129.4339623 31.0000000  Saturday weekend
+## 11584 2012-10-01     1545    NA  98.6603774 98.6603774    Monday weekday
+## 7897  2012-10-13     1045    22  28.3396226 22.0000000  Saturday weekday
+## 2710  2012-11-07      340     0   0.4905660  0.0000000 Wednesday weekday
+## 8841  2012-11-23     1200     0  63.8679245  0.0000000    Friday weekday
+## 3820  2012-10-29      510     0   3.0000000  0.0000000    Monday weekday
+## 2034  2012-11-06      245     0   0.0000000  0.0000000   Tuesday weekday
+## 16081 2012-11-12     2155    11   2.6226415 11.0000000    Monday weekday
+## 7780  2012-10-03     1035     0  37.4150943  0.0000000 Wednesday weekday
+## 4724  2012-11-15      625     0  47.0754717  0.0000000  Thursday weekday
+## 7171  2012-11-16      945     9  38.7547170  9.0000000    Friday weekday
+## 2452  2012-11-10      320    NA   0.2075472  0.2075472  Saturday weekend
+## 15440 2012-10-24     2105    42  17.2264151 42.0000000 Wednesday weekday
+## 14540 2012-11-22     1950     0  45.6603774  0.0000000  Thursday weekday
+## 15141 2012-11-29     2040    17  19.5471698 17.0000000  Thursday weekday
 ```
 
 *4.2 Plot the data using a panel plot* 
@@ -324,8 +352,6 @@ Finally, we plot the new data into a data frame. First, we have to aggregate aga
 
 
 ```r
-new_data$date<-as.POSIXct(new_data$date) # convert date to POSIXct for sorting
-
 new_avgs <- ddply(new_data,  # use data
       .(interval, factor),  # aggregate by interval (across days) and factor
       summarise,  # summarize table
@@ -344,6 +370,6 @@ line2 <- ggplot(new_avgs, # plot new average with weekday factor
 print(line2)
 ```
 
-![plot of chunk new_plot](figure/new_plot.png) 
+![plot of chunk new_plot](figure/new_plot-1.png)
 
-It appears that there are significant differences on the weekend, as people tend to get up earlier (walk less in th early morning) and walk much more during the day.
+It appears that there are significant differences on the weekend, as people tend to get up earlier on the weekday (walk less in the early morning) and walk much more during the day.
